@@ -5,12 +5,12 @@ from aiogram import Bot, Dispatcher, executor, types
 
 
 API_TOKEN = os.environ['TG_BOT_API_TOKEN']
-
-
-next_is_content = True
-
-
 logging.basicConfig(level=logging.INFO)
+
+
+is_next_content = True
+got_content = False
+got_style = False
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
@@ -23,7 +23,7 @@ async def send_welcome(message: types.Message):
     """
     await message.reply(
 """
-Этот телеграм-бот является финальным проектом в курсе DLSchool (Осень 2022) и реализует перенос стиля.
+Этот телеграм-бот является финальным проектом в продвинутом потоке курса DLSchool (Осень 2022) и реализует перенос стиля.
 
 Доступные команды:
 /start, /help - выводит данное сообщение;
@@ -45,20 +45,73 @@ async def send_welcome(message: types.Message):
 
 @dp.message_handler(commands=['content'])
 async def receive_content(message: types.Message):
-    next_is_content = True
+    global is_next_content
+    is_next_content = True
     await message.answer("Выберите и отправьте фото, на которое будет переноситься стиль")
 
 
 @dp.message_handler(commands=['style'])
 async def receive_style(message: types.Message):
-    next_is_content = False
+    global is_next_content
+    is_next_content = False
     await message.answer("Выберите и отправьте фото, c которого будет переноситься стиль")
 
 
-@dp.message_handler(commands=['go'])
+@dp.message_handler(content_types=['photo'])
+async def photo_processing(message):
+    """
+    Saves photos sent by user. How the photo will be used is defined by got_content and got_style flags.
+    """
+
+    global is_next_content
+    global got_content
+    global got_style
+
+    # Receive content photo
+    if is_next_content:
+        await message.photo[-1].download('content.jpg')
+        await message.answer("Контент-фото загружено. Используйте /style для загрузки фото-стиля")
+        is_next_content = False
+        got_content = True
+
+    # Receive style photo
+    else:
+        await message.photo[-1].download('style.jpg')
+        await message.answer("Стиль-фото загружено. Используйте /go для начала переноса")
+        is_next_content = True
+        got_style = True
+
+
+@dp.message_handler(commands=['go', 'start_transfer'])
 async def start_transfer(message: types.Message):
-    await message.answer("Go, go, Power Rangers!")
-    await message.answer("This may take a while...")
+    
+    global is_next_content
+    global got_content
+    global got_style
+
+    if not got_content:
+        is_next_content = True
+        await message.answer("Контент-фото не загружено")
+        await message.answer("Выберите и отправьте фото, на которое будет переноситься стиль")
+    elif not got_style:
+        is_next_content = False 
+        await message.answer("Стиль-фото не загружено")
+        await message.answer("Выберите и отправьте фото, c которого будет переноситься стиль")
+    else:
+        await message.answer("Go, go, Power Rangers!")
+        await message.answer("Процесс может занять некоторое время...")
+
+
+@dp.message_handler(commands=['cancel'])
+async def receive_style(message: types.Message):
+    global is_next_content
+    global got_content
+    global got_style
+    is_next_content = True
+    got_content = False
+    got_style = False
+    
+    await message.answer("Процесс отменен. Используйте /content и /style, чтобы загрузить изображения")
 
 
 if __name__ == "__main__":
