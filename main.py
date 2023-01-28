@@ -3,6 +3,8 @@ import os
 
 from aiogram import Bot, Dispatcher, executor, types
 
+from style_transfer import StyleTransfer
+
 
 API_TOKEN = os.environ['TG_BOT_API_TOKEN']
 logging.basicConfig(level=logging.INFO)
@@ -100,6 +102,10 @@ async def start_transfer(message: types.Message):
     else:
         await message.answer("Go, go, Power Rangers!")
         await message.answer("Процесс может занять некоторое время...")
+        StyleTransfer().transfer('content.jpg', 'style.jpg')
+        with open('result.jpg', 'rb') as pic_file:
+            await message.answer_photo(pic_file, caption='Готово!')
+
 
 
 @dp.message_handler(commands=['cancel'])
