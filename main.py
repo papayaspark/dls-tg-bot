@@ -7,6 +7,7 @@ from style_transfer import StyleTransfer
 
 
 API_TOKEN = os.environ['TG_BOT_API_TOKEN']
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -107,12 +108,12 @@ async def start_transfer(message: types.Message):
             await message.answer_photo(pic_file, caption='Готово!')
 
 
-
 @dp.message_handler(commands=['cancel'])
 async def receive_style(message: types.Message):
     global is_next_content
     global got_content
     global got_style
+    
     is_next_content = True
     got_content = False
     got_style = False
